@@ -482,7 +482,6 @@ class BaseMethodIntrospectorTest(TestCase):
         class_introspector = ViewSetIntrospector(SerializedAPI, '/', RegexURLResolver(r'^/$', ''))
         introspector = APIViewMethodIntrospector(class_introspector, 'POST')
         params = introspector.build_body_parameters()
-
         self.assertEqual('CommentSerializer', params['name'])
 
     def test_build_form_parameters(self):
@@ -494,6 +493,23 @@ class BaseMethodIntrospectorTest(TestCase):
         params = introspector.build_form_parameters()
 
         self.assertEqual(len(CommentSerializer().get_fields()), len(params))
+
+    def test_build_doc_query_parameters(self):
+        class SerializedAPI(ListCreateAPIView):
+            serializer_class = CommentSerializer
+
+            def get(self, request, *args, **kwargs):
+                '''
+                param1 -- Param 1
+                '''
+        class_introspector = ViewSetIntrospector(SerializedAPI, '/', RegexURLResolver(r'^/$', ''))
+        introspector = APIViewMethodIntrospector(class_introspector, 'GET')
+        params = introspector.build_query_params_from_docstring()
+        self.assertEqual(len(params), 1)
+        self.assertEqual(params[0]['name'], 'param1')
+        self.assertEqual(params[0]['description'], 'Param 1')
+
+
 
     def test_build_form_parameters_allowable_values(self):
 
