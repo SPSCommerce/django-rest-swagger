@@ -34,7 +34,8 @@ class IntrospectorHelper(object):
         if cut_off is not None:
             split_lines = split_lines[0:cut_off]
 
-        return "<br/>".join(split_lines)
+        return " ".join(['<br/>' if line == '' else line
+            for line in split_lines])
 
     @staticmethod
     def get_serializer_name(serializer):
@@ -121,7 +122,8 @@ class BaseMethodIntrospector(object):
             docstring += '\n' + method_docs
 
         docstring = IntrospectorHelper.strip_params_from_docstring(docstring)
-        docstring = docstring.replace("\n\n", "<br/>")
+        docstring = re.sub(r'\n\s+\n', "<br/>", docstring)
+        docstring = docstring.replace("\n", " ")
 
         return docstring
 
@@ -250,9 +252,18 @@ class BaseMethodIntrospector(object):
         for line in split_lines:
             param = line.split(' -- ')
             if len(param) == 2:
-                params.append({'paramType': 'query',
-                               'name': param[0].strip(),
-                               'description': param[1].strip(),
+                name, description = param
+                type = 'query'
+                if '[form]' in description:
+                    type = 'form'
+                    description = description.replace('[form]', '')
+                if '[body]' in description:
+                    type = 'body'
+                    description = description.replace('[body]', '')
+
+                params.append({'paramType': type,
+                               'name': name.strip(),
+                               'description': description.strip(),
                                'dataType': ''})
 
         return params
