@@ -137,7 +137,7 @@ class BaseMethodIntrospector(object):
         path_params = self.build_path_parameters()
         body_params = self.build_body_parameters()
         form_params = self.build_form_parameters()
-        query_params = self.build_query_params_from_docstring()
+        docstring_params = self.build_query_params_from_docstring()
 
         if path_params:
             params += path_params
@@ -148,8 +148,22 @@ class BaseMethodIntrospector(object):
             if not form_params and body_params is not None:
                 params.append(body_params)
 
-        if query_params:
-            params += query_params
+        if docstring_params:
+            params_map = {}
+            for param in params:
+                params_map[param["name"]] = param
+
+            # Check to see if a docstring param already exists from somewhere else, and if so, update it instead of appending
+            for doc_param in docstring_params:
+                if doc_param["name"] in params_map:
+                    param = params_map.get(doc_param["name"])
+                    param.update(doc_param)
+                else:
+                    if "paramType" not in doc_param:
+                        doc_param["paramType"] = "query"
+                    if "dataType" not in doc_param:
+                        doc_param["dataType"] = ""
+                    params.append(doc_param)
 
         return params
 
@@ -254,34 +268,30 @@ class BaseMethodIntrospector(object):
             param = line.split(' -- ')
             if len(param) == 2:
                 name, description = param
-                param_type = 'query'
-                required = False
-                data_type = ''
+
+                param_dict = {'name': name.strip()}
 
                 # Override paramType if keyword is present
                 if '[paramType=form]' in description:
-                    param_type = 'form'
+                    param_dict['paramType'] = 'form'
                     description = description.replace('[paramType=form]', '')
                 elif '[paramType=body]' in description:
-                    param_type = 'body'
+                    param_dict['paramType'] = 'body'
                     description = description.replace('[paramType=body]', '')
 
                 # Set required flag if present
                 if '[required]' in description:
-                    required = True
+                    param_dict['required'] = True
                     description = description.replace('[required]', '')
 
                 # Set dataType if keyword is present
                 match = data_type_pattern.match(description)
                 if match:
-                    data_type = match.group(2)
+                    param_dict['dataType'] = match.group(2)
                     description = description.replace(match.group(1), '')
 
-                params.append({'paramType': param_type,
-                               'name': name.strip(),
-                               'description': description.strip(),
-                               'dataType': data_type,
-                               'required': required})
+                param_dict['description'] = description.strip()
+                params.append(param_dict)
 
         return params
 
