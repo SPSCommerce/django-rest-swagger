@@ -254,17 +254,24 @@ class BaseMethodIntrospector(object):
             if len(param) == 2:
                 name, description = param
                 type = 'query'
+                required = False
+
                 if '[form]' in description:
                     type = 'form'
                     description = description.replace('[form]', '')
-                if '[body]' in description:
+                elif '[body]' in description:
                     type = 'body'
                     description = description.replace('[body]', '')
+
+                if '[required]' in description:
+                    required = True
+                    description = description.replace('[required]', '')
 
                 params.append({'paramType': type,
                                'name': name.strip(),
                                'description': description.strip(),
-                               'dataType': ''})
+                               'dataType': '',
+                               'required': required})
 
         return params
 
