@@ -504,7 +504,7 @@ class BaseMethodIntrospectorTest(TestCase):
                 '''
         class_introspector = ViewSetIntrospector(SerializedAPI, '/', RegexURLResolver(r'^/$', ''))
         introspector = APIViewMethodIntrospector(class_introspector, 'GET')
-        params = introspector.build_query_params_from_docstring()
+        params = introspector.build_params_from_docstring()
         self.assertEqual(len(params), 1)
         self.assertEqual(params[0]['name'], 'param1')
         self.assertEqual(params[0]['description'], 'Param 1')

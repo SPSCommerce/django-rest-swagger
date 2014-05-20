@@ -137,7 +137,7 @@ class BaseMethodIntrospector(object):
         path_params = self.build_path_parameters()
         body_params = self.build_body_parameters()
         form_params = self.build_form_parameters()
-        docstring_params = self.build_query_params_from_docstring()
+        docstring_params = self.build_params_from_docstring()
 
         if path_params:
             params += path_params
@@ -157,12 +157,15 @@ class BaseMethodIntrospector(object):
             for doc_param in docstring_params:
                 if doc_param["name"] in params_map:
                     param = params_map.get(doc_param["name"])
-                    param.update(doc_param)
+
+                    if doc_param.get("paramTypeSupplied", False):
+                        param["paramType"] = doc_param["paramType"]
+                    if doc_param.get("dataTypeSupplied", False):
+                        param["dataType"] = doc_param["dataType"]
+                    if "required" in doc_param:
+                        param["required"] = doc_param["required"]
+                    param["description"] = doc_param["description"]
                 else:
-                    if "paramType" not in doc_param:
-                        doc_param["paramType"] = "query"
-                    if "dataType" not in doc_param:
-                        doc_param["dataType"] = ""
                     params.append(doc_param)
 
         return params
@@ -255,7 +258,7 @@ class BaseMethodIntrospector(object):
 
         return data
 
-    def build_query_params_from_docstring(self):
+    def build_params_from_docstring(self):
         params = []
         data_type_pattern = re.compile('.*(\[dataType=(.+)\]).*')
 
@@ -269,25 +272,36 @@ class BaseMethodIntrospector(object):
             if len(param) == 2:
                 name, description = param
 
-                param_dict = {'name': name.strip()}
+                param_dict = {
+                    'name': name.strip(),
+                    'paramType': 'query',
+                    'dataType': 'string'
+                }
 
                 # Override paramType if keyword is present
                 if '[paramType=form]' in description:
                     param_dict['paramType'] = 'form'
+                    param_dict['paramTypeSupplied'] = True
                     description = description.replace('[paramType=form]', '')
                 elif '[paramType=body]' in description:
                     param_dict['paramType'] = 'body'
+                    param_dict['paramTypeSupplied'] = True
                     description = description.replace('[paramType=body]', '')
+                elif '[paramType=query]' in description:
+                    param_dict['paramType'] = 'query'
+                    param_dict['paramTypeSupplied'] = True
+                    description = description.replace('[paramType=query]', '')
 
                 # Set required flag if present
                 if '[required]' in description:
                     param_dict['required'] = True
                     description = description.replace('[required]', '')
 
-                # Set dataType if keyword is present
+                # Override dataType if keyword is present
                 match = data_type_pattern.match(description)
                 if match:
                     param_dict['dataType'] = match.group(2)
+                    param_dict['dataTypeSupplied'] = True
                     description = description.replace(match.group(1), '')
 
                 param_dict['description'] = description.strip()
