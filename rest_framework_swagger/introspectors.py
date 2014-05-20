@@ -243,6 +243,7 @@ class BaseMethodIntrospector(object):
 
     def build_query_params_from_docstring(self):
         params = []
+        data_type_pattern = re.compile('.*(\[dataType=(.+)\]).*')
 
         docstring = self.retrieve_docstring() or ''
         docstring += "\n" + get_view_description(self.callback)
@@ -253,24 +254,33 @@ class BaseMethodIntrospector(object):
             param = line.split(' -- ')
             if len(param) == 2:
                 name, description = param
-                type = 'query'
+                param_type = 'query'
                 required = False
+                data_type = ''
 
+                # Override paramType if keyword is present
                 if '[form]' in description:
-                    type = 'form'
+                    param_type = 'form'
                     description = description.replace('[form]', '')
                 elif '[body]' in description:
-                    type = 'body'
+                    param_type = 'body'
                     description = description.replace('[body]', '')
 
+                # Set required flag if present
                 if '[required]' in description:
                     required = True
                     description = description.replace('[required]', '')
 
-                params.append({'paramType': type,
+                # Set dataType if keyword is present
+                match = data_type_pattern.match(description)
+                if match:
+                    data_type = match.group(2)
+                    description = description.replace(match.group(1), '')
+
+                params.append({'paramType': param_type,
                                'name': name.strip(),
                                'description': description.strip(),
-                               'dataType': '',
+                               'dataType': data_type,
                                'required': required})
 
         return params
