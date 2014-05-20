@@ -259,12 +259,12 @@ class BaseMethodIntrospector(object):
                 data_type = ''
 
                 # Override paramType if keyword is present
-                if '[form]' in description:
+                if '[paramType=form]' in description:
                     param_type = 'form'
-                    description = description.replace('[form]', '')
-                elif '[body]' in description:
+                    description = description.replace('[paramType=form]', '')
+                elif '[paramType=body]' in description:
                     param_type = 'body'
-                    description = description.replace('[body]', '')
+                    description = description.replace('[paramType=body]', '')
 
                 # Set required flag if present
                 if '[required]' in description:
