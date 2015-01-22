@@ -33,7 +33,7 @@ if version < ('2','7'):
     install_requires.append('ordereddict>=1.1')
 
 setup(
-    name='django-rest-swagger',
+    name='sps-django-rest-swagger',
     version=VERSION,
     packages=['rest_framework_swagger'],
     package_data={'rest_framework_swagger': ['rest_framework_swagger/templates/rest_framework_swagger/*', 'rest_framework_swagger/static/rest_framework_swagger/*']},
@@ -43,11 +43,7 @@ setup(
     long_description=README,
     install_requires=install_requires,
 
-    author='Marc Gibbons',
-    author_email='marc_gibbons@rogers.com',
-    maintainer='Ellery Newcomer',
-    maintainer_email='ellery-newcomer@utulsa.edu',
-    url='http://github.com/marcgibbons/django-rest-swagger',
+    url='https://github.com/mzakabluk/django-rest-swagger.git',
     classifiers=[
         'Environment :: Web Environment',
         'Framework :: Django',
