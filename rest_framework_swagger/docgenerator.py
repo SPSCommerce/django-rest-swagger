@@ -57,19 +57,13 @@ class DocumentationGenerator(object):
         operations = []
 
         introspector = self.get_introspector(api, apis)
-
         for method_introspector in introspector:
             if not isinstance(method_introspector, BaseMethodIntrospector) or \
                     method_introspector.get_http_method() == "OPTIONS":
                 continue  # No one cares. I impose JSON.
 
             doc_parser = method_introspector.get_yaml_parser()
-
-            serializer = self._get_method_serializer(method_introspector)
-
-            response_type = self._get_method_response_type(
-                doc_parser, serializer, introspector, method_introspector)
-
+            response_type = doc_parser.get_response_type()
             operation = {
                 'method': method_introspector.get_http_method(),
                 'summary': method_introspector.get_summary(),
@@ -97,62 +91,13 @@ class DocumentationGenerator(object):
         return operations
 
     def get_models(self, apis):
-        """
-        Builds a list of Swagger 'models'. These represent
-        DRF serializers and their fields
-        """
-        serializers = self._get_serializer_set(apis)
-        serializers.update(self.explicit_serializers)
-        serializers.update(
-            self._find_field_serializers(serializers)
-        )
-
         models = {}
-
-        for serializer in serializers:
-            data = self._get_serializer_fields(serializer)
-
-            # Register 2 models with different subset of properties suitable
-            # for data reading and writing.
-            # i.e. rest framework does not output write_only fields in response
-            # or require read_only fields in complex input.
-
-            serializer_name = IntrospectorHelper.get_serializer_name(serializer)
-            # Writing
-            # no readonly fields
-            w_name = "Write{serializer}".format(serializer=serializer_name)
-
-            w_properties = OrderedDict((k, v) for k, v in data['fields'].items()
-                                       if k not in data['read_only'])
-
-            models[w_name] = {
-                'id': w_name,
-                'required': [i for i in data['required'] if i in w_properties.keys()],
-                'properties': w_properties,
-            }
-
-            # Reading
-            # no write_only fields
-            r_name = serializer_name
-
-            r_properties = OrderedDict((k, v) for k, v in data['fields'].items()
-                                       if k not in data['write_only'])
-
-            models[r_name] = {
-                'id': r_name,
-                'required': [i for i in r_properties.keys()],
-                'properties': r_properties,
-            }
-
-            # Enable original model for testing purposes
-            # models[serializer_name] = {
-            #     'id': serializer_name,
-            #     'required': data['required'],
-            #     'properties': data['fields'],
-            # }
-
-        models.update(self.explicit_response_types)
-        models.update(self.fields_serializers)
+        for api in apis:
+            intro = self.get_introspector(api, apis)
+            models_classes = intro.get_models()
+            parser = intro.get_yaml_parser()
+            for cls in models_classes:
+                models[cls.__name__] = parser.load_obj_from_docstring(cls.__doc__)
         return models
 
     def _get_method_serializer(self, method_inspector):

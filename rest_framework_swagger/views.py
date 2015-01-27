@@ -98,26 +98,28 @@ class SwaggerResourcesView(APIDocView):
     def get_resources(self):
         urlparser = UrlParser()
         urlconf = getattr(self.request, "urlconf", None)
-        apis = urlparser.get_apis(urlconf=urlconf, exclude_namespaces=SWAGGER_SETTINGS.get('exclude_namespaces'))
+        apis = urlparser.get_apis(urlconf=urlconf,
+                                  exclude_namespaces=SWAGGER_SETTINGS.get('exclude_namespaces'))
         resources = urlparser.get_top_level_apis(apis)
         return resources
 
 
 class SwaggerApiView(APIDocView):
-
     renderer_classes = (JSONRenderer,)
+
 
     def get(self, request, path):
         apis = self.get_api_for_resource(path)
         generator = DocumentationGenerator()
+        apis_description = generator.generate(apis)
 
         return Response({
             'apiVersion': SWAGGER_SETTINGS.get('api_version', ''),
             'swaggerVersion': '1.2',
             'basePath': self.api_full_uri.rstrip('/'),
             'resourcePath': '/' + path,
-            'apis': generator.generate(apis),
-            'models': generator.get_models(apis),
+            'apis': apis_description,
+            'models': generator.get_models(apis)
         })
 
     def get_api_for_resource(self, filter_path):
