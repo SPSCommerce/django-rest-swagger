@@ -34,28 +34,6 @@ def get_default_value(field):
     return default_value
 
 
-def related_models(models):
-    def get_releated_models_classes(cls):
-        releated_models = models
-        return releated_models
-
-    def decorator(cls):
-        cls.get_releated_models_classes = classmethod(get_releated_models_classes)
-        return cls
-    return decorator
-
-
-def model(model):
-    def get_model_class(cls):
-        model_class = model
-        return model_class
-
-    def decorator(cls):
-        cls.get_model_class = classmethod(get_model_class)
-        return cls
-    return decorator
-
-
 class IntrospectorHelper(object):
     __metaclass__ = ABCMeta
 
@@ -1105,3 +1083,9 @@ class YAMLDocstringParser(object):
             strategy = default
 
         return strategy
+
+    def is_hidden_method(self):
+        """
+        Docstring may define custom response class
+        """
+        return self.object.get('hidden_method', False)

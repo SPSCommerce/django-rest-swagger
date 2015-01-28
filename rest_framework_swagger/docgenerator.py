@@ -63,30 +63,31 @@ class DocumentationGenerator(object):
                 continue  # No one cares. I impose JSON.
 
             doc_parser = method_introspector.get_yaml_parser()
-            response_type = doc_parser.get_response_type()
-            operation = {
-                'method': method_introspector.get_http_method(),
-                'summary': method_introspector.get_summary(),
-                'nickname': method_introspector.get_nickname(),
-                'notes': method_introspector.get_notes(),
-                'type': response_type,
-            }
+            if not doc_parser.is_hidden_method():
+                response_type = doc_parser.get_response_type()
+                operation = {
+                    'method': method_introspector.get_http_method(),
+                    'summary': method_introspector.get_summary(),
+                    'nickname': method_introspector.get_nickname(),
+                    'notes': method_introspector.get_notes(),
+                    'type': response_type,
+                }
 
-            if doc_parser.yaml_error is not None:
-                operation['notes'] += "<pre>YAMLError:\n {err}</pre>".format(
-                    err=doc_parser.yaml_error)
+                if doc_parser.yaml_error is not None:
+                    operation['notes'] += "<pre>YAMLError:\n {err}</pre>".format(
+                        err=doc_parser.yaml_error)
 
-            response_messages = doc_parser.get_response_messages()
-            parameters = doc_parser.discover_parameters(
-                inspector=method_introspector)
+                response_messages = doc_parser.get_response_messages()
+                parameters = doc_parser.discover_parameters(
+                    inspector=method_introspector)
 
-            if parameters:
-                operation['parameters'] = parameters
+                if parameters:
+                    operation['parameters'] = parameters
 
-            if response_messages:
-                operation['responseMessages'] = response_messages
+                if response_messages:
+                    operation['responseMessages'] = response_messages
 
-            operations.append(operation)
+                operations.append(operation)
 
         return operations
 

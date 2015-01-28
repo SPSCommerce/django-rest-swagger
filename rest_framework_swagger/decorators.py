@@ -2,6 +2,27 @@ import types
 from django.utils import six
 from collections import namedtuple
 
+def related_models(models):
+    def get_releated_models_classes(cls):
+        releated_models = models
+        return releated_models
+
+    def decorator(cls):
+        cls.get_releated_models_classes = classmethod(get_releated_models_classes)
+        return cls
+    return decorator
+
+
+def model(model):
+    def get_model_class(cls):
+        model_class = model
+        return model_class
+
+    def decorator(cls):
+        cls.get_model_class = classmethod(get_model_class)
+        return cls
+    return decorator
+
 
 def serializer_class(clazz):
     def _get_serializer_class(self):
