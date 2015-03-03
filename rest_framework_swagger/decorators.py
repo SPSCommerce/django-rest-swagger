@@ -51,7 +51,7 @@ def func_to_wrapper(func):
     return func.cls
 
 
-def related_models(models):
+def swagger_related_models(models):
 
     def get_releated_models_classes(cls):
         releated_models = models
@@ -63,7 +63,7 @@ def related_models(models):
     return decorator
 
 
-def model(model):
+def swagger_model(model):
 
     def get_model_class(cls):
         model_class = model
