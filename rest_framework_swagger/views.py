@@ -8,9 +8,12 @@ from django.core.exceptions import PermissionDenied
 from .compat import import_string
 
 from rest_framework.views import Response
-from rest_framework_swagger.urlparser import UrlParser
+#from rest_framework_swagger.urlparser import UrlParser
+from rest_framework_swagger.docstrurlparser import DocstrUrlParser as UrlParser
+
 from rest_framework_swagger.apidocview import APIDocView
-from rest_framework_swagger.docgenerator import DocumentationGenerator
+#from rest_framework_swagger.docgenerator import DocumentationGenerator
+from rest_framework_swagger.docstrcollector import DocstrCollector as DocumentationGenerator
 
 from rest_framework_swagger import SWAGGER_SETTINGS
 
