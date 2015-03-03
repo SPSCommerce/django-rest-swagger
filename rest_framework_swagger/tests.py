@@ -24,6 +24,9 @@ from .introspectors import ViewSetIntrospector, APIViewIntrospector, \
     WrappedAPIViewIntrospector, WrappedAPIViewMethodIntrospector, \
     IntrospectorHelper, APIViewMethodIntrospector
 
+from .decorators import swagger_model
+from .docstrurlparser import DocstrUrlParser
+from .docstrcollector import DocstrCollector
 
 def no_markdown(func):
     def func_sans_markdown(*args, **kwargs):
@@ -1705,3 +1708,92 @@ def my_view_mocker(view):
 
 def my_view_mocker2(view):
     pass
+
+#
+# Docstr implementation tests
+#
+
+
+class MockModel2(object):
+    """
+    Mock
+    ---
+    """
+
+@swagger_model(MockModel2)
+class MockApiView2(APIView):
+    """
+    A Test View
+    ---
+    api: Mock
+    """
+    def get(self, request):
+        """
+        Get method specific comments
+        """
+        pass
+    pass
+
+
+class DockstrUrlParserTest(TestCase):
+
+    def setUp(self):
+        self.url_patterns = patterns(
+            '',
+            url(r'a-view/?$', MockApiView2.as_view(), name='a test view'),
+            url(r'a-view/child/?$', MockApiView2.as_view()),
+            url(r'a-view/child2/?$', MockApiView2.as_view()),
+            url(r'another-view/?$', MockApiView2.as_view(), name='another test view'),
+        )
+
+    def test_get_apis(self):
+        urlparser = DocstrUrlParser()
+        urls = import_module(settings.ROOT_URLCONF)
+        # Overwrite settings with test patterns
+        urls.urlpatterns = self.url_patterns
+        apis = urlparser.get_apis()
+
+        for api in apis:
+            self.assertIn(api['pattern'], self.url_patterns)
+
+    def test_filter_custom(self):
+        urlparser = DocstrUrlParser()
+        apis = [{'api': '/api/custom'}]
+        apis2 = urlparser.get_filtered_apis(apis, 'api/custom')
+        self.assertEqual(apis, apis2)
+
+    def test_get_top_level_api(self):
+        urlparser = DocstrUrlParser()
+        apis = urlparser.get_top_level_apis(urlparser.get_apis(self.url_patterns))
+
+        self.assertEqual(2, len(apis))
+        self.assertIn('a-view', apis)
+        self.assertIn('another-view', apis)
+
+
+class DocstrCollectorTest(TestCase):
+
+    def setUp(self):
+        self.url_patterns = patterns(
+            '',
+            url(r'a-view/?$', MockApiView2.as_view(), name='a test view'),
+            url(r'a-view/child/?$', MockApiView2.as_view()),
+            url(r'a-view/child2/?$', MockApiView2.as_view()),
+        )
+
+    def test_get_operations(self):
+
+        @swagger_model(MockModel2)
+        class AnAPIView(APIView):
+            def post(self, *args, **kwargs):
+                pass
+
+        api = {
+            'path': 'a-path/',
+            'callback': AnAPIView,
+            'pattern': patterns('')
+        }
+        docgen = DocstrCollector()
+        operations = docgen.get_operations(api)
+
+        self.assertEqual('POST', operations[0]['method'])
