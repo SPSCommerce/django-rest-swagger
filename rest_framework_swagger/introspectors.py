@@ -152,7 +152,7 @@ class BaseMethodIntrospector(object):
     def check_yaml_methods(self, yaml_methods):
         missing_set = set()
         for key in yaml_methods:
-            if key not in self.parent.methods() and key != 'api':
+            if key not in self.parent.methods():
                 missing_set.add(key)
         if missing_set:
             raise Exception(
@@ -450,27 +450,6 @@ class APIViewIntrospector(BaseViewIntrospector):
     def methods(self):
         return self.callback().allowed_methods
 
-    def get_api(self):
-        parser = self.get_yaml_parser()
-        return parser.object
-
-    def get_models(self):
-        model_classes = []
-        if hasattr(self.callback, 'get_model_class'):
-            root_model = self.callback.get_model_class()
-            model_classes.append(root_model)
-            model_classes.extend(self._get_releated_classes_models_list(root_model))
-        return model_classes
-
-    def _get_releated_classes_models_list(self, obj_class):
-        releated_obj = []
-        if hasattr(obj_class, "get_releated_models_classes"):
-            releated_obj_classes = obj_class.get_releated_models_classes()
-            releated_obj.extend(releated_obj_classes)
-            for cls in releated_obj_classes:
-                if hasattr(cls, "get_releated_models_classes"):
-                    releated_obj.extend(self._get_releated_classes_models_list(cls))
-        return releated_obj
 
 class WrappedAPIViewIntrospector(BaseViewIntrospector):
     def __iter__(self):
@@ -787,8 +766,6 @@ class YAMLDocstringParser(object):
             return yaml.load(yaml_string)
         except yaml.YAMLError as e:
             self.yaml_error = e
-            print(e.problem)
-            print (e.problem_mark)
             return None
 
     def _load_class(self, cls_path, callback):
@@ -1083,9 +1060,3 @@ class YAMLDocstringParser(object):
             strategy = default
 
         return strategy
-
-    def is_hidden_method(self):
-        """
-        Docstring may define custom response class
-        """
-        return self.object.get('hidden_method', False)

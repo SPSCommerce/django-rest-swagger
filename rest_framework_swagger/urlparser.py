@@ -1,10 +1,11 @@
+import os
+
 from django.conf import settings
 from django.utils.importlib import import_module
 from django.core.urlresolvers import RegexURLResolver, RegexURLPattern
 from django.contrib.admindocs.views import simplify_regex
 
 from rest_framework.views import APIView
-from rest_framework_swagger.introspectors import APIViewIntrospector
 
 from .apidocview import APIDocView
 
@@ -18,7 +19,6 @@ class UrlParser(object):
         patterns -- supply list of patterns (optional)
         exclude_namespaces -- list of namespaces to ignore (optional)
         """
-
         if patterns is None and urlconf is not None:
             urls = import_module(urlconf)
             patterns = urls.urlpatterns
@@ -28,27 +28,68 @@ class UrlParser(object):
 
         apis = self.__flatten_patterns_tree__(
             patterns,
+            filter_path=filter_path,
             exclude_namespaces=exclude_namespaces,
         )
-        extended_apis = []
-        for api in apis:
-            introspector = APIViewIntrospector(api.get("callback"), api.get("path"), api.get("pattern"))
-            api.update(introspector.get_api())
-            extended_apis.append(api)
-        if filter_path:
-            return self.get_filtered_apis(extended_apis, filter_path)
+        if filter_path is not None:
+            return self.get_filtered_apis(apis, filter_path)
 
-        return extended_apis
+        return apis
 
     def get_filtered_apis(self, apis, filter_path):
-        return filter(lambda x: filter_path == x.get('api'), apis)
+        filtered_list = []
+
+        for api in apis:
+            if filter_path in api['path'].strip('/'):
+                filtered_list.append(api)
+
+        return filtered_list
 
     def get_top_level_apis(self, apis):
-        top_level_api  = [api.get("api") for api in apis if  api.has_key("api")]
-        return set(top_level_api)
+        """
+        Returns the 'top level' APIs (ie. swagger 'resources')
 
+        apis -- list of APIs as returned by self.get_apis
+        """
+        root_paths = set()
+        api_paths = [endpoint['path'].strip("/") for endpoint in apis]
 
-    def __assemble_endpoint_data__(self, pattern, prefix=''):
+        for path in api_paths:
+            #  If a URLs /resource/ and /resource/{pk} exist, use the base
+            #  as the resource. If there is no base resource URL, then include
+            path_base = path.split('/{')[0]
+            if '{' in path and path_base in api_paths:
+                continue
+            root_paths.add(path_base)
+
+        top_level_apis = self.__filter_top_level_apis__(root_paths)
+
+        return sorted(top_level_apis, key=self.__get_last_element__)
+
+    def __filter_top_level_apis__(self, root_paths):
+        """
+        Returns top level APIs
+        """
+        filtered_paths = set()
+        base_path = self.__get_base_path__(root_paths)
+        for path in root_paths:
+            resource = path.replace(base_path, '').split('/')[0]
+            filtered_paths.add(base_path + resource)
+
+        return list(filtered_paths)
+
+    def __get_base_path__(self, root_paths):
+        base_path = os.path.commonprefix(root_paths)
+        slash_index = base_path.rfind('/') + 1
+        base_path = base_path[:slash_index]
+
+        return base_path
+
+    def __get_last_element__(self, paths):
+        split_paths = paths.split('/')
+        return split_paths[len(split_paths) - 1]
+
+    def __assemble_endpoint_data__(self, pattern, prefix='', filter_path=None):
         """
         Creates a dictionary for matched API urls
 
@@ -56,10 +97,16 @@ class UrlParser(object):
         prefix -- the API path prefix (used by recursion)
         """
         callback = self.__get_pattern_api_callback__(pattern)
+
         if callback is None or self.__exclude_router_api_root__(callback):
             return
 
         path = simplify_regex(prefix + pattern.regex.pattern)
+
+        if filter_path is not None:
+            if filter_path not in path:
+                return None
+
         path = path.replace('<', '{').replace('>', '}')
 
         if self.__exclude_format_endpoints__(path):
@@ -71,7 +118,7 @@ class UrlParser(object):
             'callback': callback,
         }
 
-    def __flatten_patterns_tree__(self, patterns, prefix='', exclude_namespaces=[]):
+    def __flatten_patterns_tree__(self, patterns, prefix='', filter_path=None, exclude_namespaces=[]):
         """
         Uses recursion to flatten url tree.
 
@@ -82,7 +129,7 @@ class UrlParser(object):
 
         for pattern in patterns:
             if isinstance(pattern, RegexURLPattern):
-                endpoint_data = self.__assemble_endpoint_data__(pattern, prefix)
+                endpoint_data = self.__assemble_endpoint_data__(pattern, prefix, filter_path=filter_path)
 
                 if endpoint_data is None:
                     continue
@@ -98,6 +145,7 @@ class UrlParser(object):
                 pattern_list.extend(self.__flatten_patterns_tree__(
                     pattern.url_patterns,
                     pref,
+                    filter_path=filter_path,
                     exclude_namespaces=exclude_namespaces,
                 ))
 
