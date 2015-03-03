@@ -9,18 +9,18 @@ def is_hidden_method(parser):
 class DocstrMethodIntrospector(APIViewMethodIntrospector):
 
     def check_yaml_methods(self, yaml_methods):
-        yaml_methods = ((k, v)
-                        for k, v in yaml_methods.iteritems() if k != 'api')
+        yaml_methods = (m for m in yaml_methods if m != 'api')
         return super(DocstrMethodIntrospector, self).check_yaml_methods(yaml_methods)
 
 
 class DocstrIntrospector(APIViewIntrospector):
 
     def __iter__(self):
-        for method in self.methods():
+        for method_name in self.methods():
+            method = DocstrMethodIntrospector(self, method_name)
             doc_parser = method.get_yaml_parser()
             if not is_hidden_method(doc_parser):
-                yield DocstrMethodIntrospector(self, method)
+                yield method
 
     def get_api(self):
         parser = self.get_yaml_parser()
@@ -67,3 +67,9 @@ class DocstrCollector(DocumentationGenerator):
                 models[cls.__name__] = doc
 
         return models
+
+    def get_introspector(self, api, apis):
+        callback = api['callback']
+        path = api['path']
+        pattern = api['pattern']
+        return DocstrIntrospector(callback, path, pattern)
