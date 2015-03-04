@@ -1720,19 +1720,40 @@ class MockModel2(object):
     ---
     """
 
+
+class AnotherMockModel(object):
+    """
+    Mock
+    ---
+    """
+
 @swagger_model(MockModel2)
 class MockApiView2(APIView):
     """
     A Test View
     ---
-    api: Mock
+    api: Mock2
     """
     def get(self, request):
         """
         Get method specific comments
         """
         pass
-    pass
+
+
+@swagger_model(AnotherMockModel)
+class AnotherMockApiView(APIView):
+    """
+    A Test View
+    ---
+    api: Another Mock
+    """
+    def get(self, request):
+        """
+        Get method specific comments
+        """
+        pass
+
 
 
 class DockstrUrlParserTest(TestCase):
@@ -1743,7 +1764,8 @@ class DockstrUrlParserTest(TestCase):
             url(r'a-view/?$', MockApiView2.as_view(), name='a test view'),
             url(r'a-view/child/?$', MockApiView2.as_view()),
             url(r'a-view/child2/?$', MockApiView2.as_view()),
-            url(r'another-view/?$', MockApiView2.as_view(), name='another test view'),
+            url(r'another-view/?$', AnotherMockApiView.as_view(),
+                name='another test view'),
         )
 
     def test_get_apis(self):
@@ -1767,8 +1789,8 @@ class DockstrUrlParserTest(TestCase):
         apis = urlparser.get_top_level_apis(urlparser.get_apis(self.url_patterns))
 
         self.assertEqual(2, len(apis))
-        self.assertIn('a-view', apis)
-        self.assertIn('another-view', apis)
+        self.assertIn('Mock2', apis)
+        self.assertIn('Another Mock', apis)
 
 
 class DocstrCollectorTest(TestCase):
