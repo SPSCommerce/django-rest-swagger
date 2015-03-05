@@ -42,7 +42,12 @@ setup(
     description='Swagger UI for Django REST Framework 2.3+',
     long_description=README,
     install_requires=install_requires,
-    url='https://github.com/mzakabluk/django-rest-swagger.git',
+
+    author='Marc Gibbons',
+    author_email='marc_gibbons@rogers.com',
+    maintainer='Ellery Newcomer',
+    maintainer_email='ellery-newcomer@utulsa.edu',
+    url='http://github.com/marcgibbons/django-rest-swagger',
     classifiers=[
         'Environment :: Web Environment',
         'Framework :: Django',
