@@ -1,5 +1,5 @@
-from introspectors import APIViewIntrospector, APIViewMethodIntrospector
-from docgenerator import DocumentationGenerator
+from rest_framework_swagger.introspectors import APIViewIntrospector, APIViewMethodIntrospector
+from rest_framework_swagger.docgenerator import DocumentationGenerator
 
 
 def is_hidden_method(parser):
