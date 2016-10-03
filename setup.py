@@ -33,7 +33,7 @@ if version < ('2','7'):
     install_requires.append('ordereddict>=1.1')
 
 setup(
-    name='django-rest-swagger',
+    name='django-docstr-swagger',
     version=VERSION,
     packages=['rest_framework_swagger'],
     package_data={'rest_framework_swagger': ['rest_framework_swagger/templates/rest_framework_swagger/*', 'rest_framework_swagger/static/rest_framework_swagger/*']},
