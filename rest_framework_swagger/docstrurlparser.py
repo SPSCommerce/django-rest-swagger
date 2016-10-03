@@ -1,7 +1,13 @@
 from django.conf import settings
-from django.utils.importlib import import_module
 from django.core.urlresolvers import RegexURLResolver, RegexURLPattern
 from django.contrib.admindocs.views import simplify_regex
+try:
+    # Django versions >= 1.9
+    from django.utils.module_loading import import_module
+except ImportError:
+    # Django versions < 1.9
+    from django.utils.importlib import import_module
+
 
 from rest_framework.views import APIView
 from rest_framework_swagger.docstrcollector import DocstrIntrospector
