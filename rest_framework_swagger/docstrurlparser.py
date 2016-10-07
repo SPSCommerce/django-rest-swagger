@@ -50,9 +50,8 @@ class DocstrUrlParser(object):
         return filter(lambda x: filter_path == x.get('api', '').strip('/'), apis)
 
     def get_top_level_apis(self, apis):
-        top_level_api = (api.get("api") for api in apis if api.has_key("api"))
+        top_level_api = (api.get("api") for api in apis if "api" in api)
         return set(top_level_api)
-
 
     def __assemble_endpoint_data__(self, pattern, prefix=''):
         """
