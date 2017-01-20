@@ -47,7 +47,7 @@ class DocstrUrlParser(object):
         return extended_apis
 
     def get_filtered_apis(self, apis, filter_path):
-        return filter(lambda x: filter_path == x.get('api', '').strip('/'), apis)
+        return [api for api in apis if filter_path == api.get('api', '').strip('/')]
 
     def get_top_level_apis(self, apis):
         top_level_api = (api.get("api") for api in apis if "api" in api)
